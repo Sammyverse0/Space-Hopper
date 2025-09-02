@@ -15,6 +15,9 @@ public class PlayerController : MonoBehaviour
     // The speed at which the player rotates to align with gravity.
     public float rotationSpeed = 5f;
 
+    // The speed at which the player runs forward on a planet.
+    public float runSpeed = 5f;
+
     // The maximum distance a player can be from a planet to be affected by its gravity.
     public float gravityActivationDistance = 20f;
 
@@ -35,11 +38,37 @@ public class PlayerController : MonoBehaviour
 
     private bool isGrounded;
 
+    // --- Game Over Trigger ---
+
+    // The tag for the game over trigger.
+    public string gameOverTriggerTag = "GameOver";
+
     private void Awake()
     {
         // Get the Rigidbody component from the GameObject.
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = false;
+    }
+
+    private void Start()
+    {
+        // On game start, immediately snap the player to the closest planet.
+        FindClosestGravitySource();
+
+        if (closestGravitySource != null)
+        {
+            // Position the player on the planet's surface.
+            Vector3 planetSurfacePosition = closestGravitySource.position + (transform.position - closestGravitySource.position).normalized * closestGravitySource.GetComponent<Collider>().bounds.extents.y;
+            transform.position = planetSurfacePosition;
+            
+            // Set the player's rotation to align with the planet's gravity.
+            Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -Vector3.Normalize(closestGravitySource.position - transform.position)) * transform.rotation;
+            transform.rotation = targetRotation;
+
+            // Mark the player as grounded and make the rigidbody kinematic to prevent sliding.
+            isGrounded = true;
+            rb.isKinematic = true;
+        }
     }
     
     private void Update()
@@ -124,14 +153,24 @@ public class PlayerController : MonoBehaviour
         {
             float distance = Vector3.Distance(transform.position, closestGravitySource.position);
 
-            // Only apply gravity if the player is within the activation distance and not grounded.
-            if (distance < gravityActivationDistance && !isGrounded)
+            // Only apply gravity if the player is within the activation distance.
+            if (distance < gravityActivationDistance)
             {
-                Vector3 gravityDirection = (closestGravitySource.position - transform.position).normalized;
-                rb.AddForce(gravityDirection * moveSpeed, ForceMode.Force);
-
-                // Align the player's rotation with the gravity source.
-                Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -gravityDirection) * transform.rotation;
+                // Apply a continuous forward movement when grounded.
+                if (isGrounded)
+                {
+                    transform.position += transform.forward * runSpeed * Time.deltaTime;
+                }
+                
+                // Gravity is applied only when the player is not grounded.
+                if (!isGrounded)
+                {
+                    Vector3 gravityDirection = (closestGravitySource.position - transform.position).normalized;
+                    rb.AddForce(gravityDirection * moveSpeed, ForceMode.Force);
+                }
+                
+                // Always align the player's rotation with the gravity source.
+                Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -Vector3.Normalize(closestGravitySource.position - transform.position)) * transform.rotation;
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
         }
@@ -186,5 +225,16 @@ public class PlayerController : MonoBehaviour
         }
 
         closestGravitySource = newClosestSource;
+    }
+    
+    // New code to handle the game over trigger.
+    private void OnTriggerEnter(Collider other)
+    {
+        // Check if the collided object has the GameOver tag.
+        if (other.CompareTag(gameOverTriggerTag))
+        {
+            // Load the "GameOver" scene.
+            UnityEngine.SceneManagement.SceneManager.LoadScene("GameOver");
+        }
     }
 }
