@@ -12,6 +12,12 @@ public class PlayerController : MonoBehaviour
     // The force applied when the player jumps.
     public float jumpForce = 10f;
 
+    // The speed at which the player rotates to align with gravity.
+    public float rotationSpeed = 5f;
+
+    // The maximum distance a player can be from a planet to be affected by its gravity.
+    public float gravityActivationDistance = 20f;
+
     // The tag used to identify "planets" or gravity sources.
     public string gravitySourceTag = "GravitySource";
 
@@ -26,6 +32,8 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rb;
     private Transform closestGravitySource;
+
+    private bool isGrounded;
 
     private void Awake()
     {
@@ -76,8 +84,17 @@ public class PlayerController : MonoBehaviour
     /// <param name="touch">The touch object to analyze.</param>
     private void HandleSwipe(Touch touch)
     {
+        // Only allow a jump if the player is grounded.
+        if (!isGrounded)
+        {
+            return;
+        }
+
         Vector2 swipeDelta = touch.position - touchStartPos;
         float angle = Vector2.SignedAngle(Vector2.up, swipeDelta.normalized);
+
+        // When the player jumps, re-enable the Rigidbody.
+        rb.isKinematic = false;
 
         // Apply a jump force for all upward swipes.
         if (swipeDelta.y > 0)
@@ -105,8 +122,46 @@ public class PlayerController : MonoBehaviour
 
         if (closestGravitySource != null)
         {
-            Vector3 gravityDirection = (closestGravitySource.position - transform.position).normalized;
-            rb.AddForce(gravityDirection * moveSpeed, ForceMode.Force);
+            float distance = Vector3.Distance(transform.position, closestGravitySource.position);
+
+            // Only apply gravity if the player is within the activation distance and not grounded.
+            if (distance < gravityActivationDistance && !isGrounded)
+            {
+                Vector3 gravityDirection = (closestGravitySource.position - transform.position).normalized;
+                rb.AddForce(gravityDirection * moveSpeed, ForceMode.Force);
+
+                // Align the player's rotation with the gravity source.
+                Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -gravityDirection) * transform.rotation;
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Checks for collisions to determine if the player is grounded.
+    /// This is where we make the player "stick" to the planet.
+    /// </summary>
+    private void OnCollisionStay(Collision collision)
+    {
+        // Check if the collision object has the GravitySource tag.
+        if (collision.gameObject.CompareTag(gravitySourceTag))
+        {
+            // The player is grounded.
+            isGrounded = true;
+            
+            // Set the rigidbody to kinematic to prevent sliding.
+            rb.isKinematic = true;
+        }
+    }
+
+    /// <summary>
+    /// When the player leaves a planet, they are no longer grounded.
+    /// </summary>
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.CompareTag(gravitySourceTag))
+        {
+            isGrounded = false;
         }
     }
 
