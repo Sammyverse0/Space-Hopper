@@ -1,53 +1,51 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-// This script manages player movement (gravity, jumping).
+// This script manages player movement (gravity, jumping) and handles all physics interactions.
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
-    // --- Player Movement Variables ---
+    // --- Public Variables to Adjust in Unity Editor ---
 
     // The speed at which the player is pulled towards gravity sources.
-    public float moveSpeed = 10f;
+    public float gravityForce = 20f;
     
     // The force applied when the player jumps.
-    public float jumpForce = 10f;
+    public float jumpForce = 15f;
 
     // The speed at which the player rotates to align with gravity.
-    public float rotationSpeed = 5f;
+    public float rotationSpeed = 10f;
 
     // The speed at which the player runs forward on a planet.
-    public float runSpeed = 5f;
+    public float runSpeed = 8f;
 
     // The maximum distance a player can be from a planet to be affected by its gravity.
-    public float gravityActivationDistance = 20f;
+    public float gravityActivationDistance = 30f;
 
     // The tag used to identify "planets" or gravity sources.
     public string gravitySourceTag = "GravitySource";
-
-    // --- Swipe Input Variables ---
-
-    // The minimum distance a touch must move to be considered a swipe.
-    private float swipeThreshold = 50f;
-    private Vector2 touchStartPos;
-    private bool isSwiping = false;
+    
+    // The tag for the game over trigger.
+    public string gameOverTriggerTag = "GameOver";
 
     // --- Private References ---
 
     private Rigidbody rb;
     private Transform closestGravitySource;
-
     private bool isGrounded;
-
-    // --- Game Over Trigger ---
-
-    // The tag for the game over trigger.
-    public string gameOverTriggerTag = "GameOver";
+    private Vector2 touchStartPos;
+    private bool isSwiping;
+    
+    // The minimum distance a touch must move to be considered a swipe.
+    private const float SwipeThreshold = 50f;
 
     private void Awake()
     {
         // Get the Rigidbody component from the GameObject.
         rb = GetComponent<Rigidbody>();
-        rb.isKinematic = false;
+        
+        // Freeze rotation on the X and Z axes to prevent the player from toppling over.
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
     private void Start()
@@ -58,14 +56,14 @@ public class PlayerController : MonoBehaviour
         if (closestGravitySource != null)
         {
             // Position the player on the planet's surface.
-            Vector3 planetSurfacePosition = closestGravitySource.position + (transform.position - closestGravitySource.position).normalized * closestGravitySource.GetComponent<Collider>().bounds.extents.y;
+            Vector3 planetSurfacePosition = closestGravitySource.position + (transform.position - closestGravitySource.position).normalized * (closestGravitySource.GetComponent<Collider>().bounds.extents.y + 0.1f);
             transform.position = planetSurfacePosition;
             
             // Set the player's rotation to align with the planet's gravity.
             Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -Vector3.Normalize(closestGravitySource.position - transform.position)) * transform.rotation;
             transform.rotation = targetRotation;
 
-            // Mark the player as grounded and make the rigidbody kinematic to prevent sliding.
+            // Mark the player as grounded.
             isGrounded = true;
             rb.isKinematic = true;
         }
@@ -73,35 +71,60 @@ public class PlayerController : MonoBehaviour
     
     private void Update()
     {
-        // Check for a single touch.
+        HandleTouchInput();
+    }
+
+    private void FixedUpdate()
+    {
+        // Find the closest gravity source for a continuous pull.
+        FindClosestGravitySource();
+
+        if (closestGravitySource != null)
+        {
+            float distance = Vector3.Distance(transform.position, closestGravitySource.position);
+
+            if (distance < gravityActivationDistance)
+            {
+                // Apply a continuous forward movement when grounded.
+                if (isGrounded)
+                {
+                    transform.position += transform.forward * runSpeed * Time.deltaTime;
+                }
+                
+                // Gravity is applied only when the player is not grounded.
+                if (!isGrounded)
+                {
+                    Vector3 gravityDirection = (closestGravitySource.position - transform.position).normalized;
+                    rb.AddForce(gravityDirection * gravityForce, ForceMode.Force);
+                }
+                
+                // Always align the player's rotation with the gravity source.
+                Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -Vector3.Normalize(closestGravitySource.position - transform.position)) * transform.rotation;
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Handles all touch-based swipe input.
+    /// </summary>
+    private void HandleTouchInput()
+    {
         if (Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
 
             switch (touch.phase)
             {
-                // When the touch begins, record the starting position.
                 case TouchPhase.Began:
                     touchStartPos = touch.position;
                     isSwiping = false;
                     break;
-
-                // When the touch is moved, check if it's a valid swipe.
-                case TouchPhase.Moved:
-                    if (!isSwiping && Vector2.Distance(touchStartPos, touch.position) > swipeThreshold)
+                case TouchPhase.Ended:
+                    if (Vector2.Distance(touchStartPos, touch.position) > SwipeThreshold)
                     {
-                        isSwiping = true;
                         HandleSwipe(touch);
                     }
-                    break;
-                
-                // When the touch ends, handle it if it was a swipe.
-                case TouchPhase.Ended:
-                    if (!isSwiping && Vector2.Distance(touchStartPos, touch.position) > swipeThreshold)
-                    {
-                         HandleSwipe(touch);
-                    }
-                    isSwiping = false;
                     break;
             }
         }
@@ -120,76 +143,43 @@ public class PlayerController : MonoBehaviour
         }
 
         Vector2 swipeDelta = touch.position - touchStartPos;
-        float angle = Vector2.SignedAngle(Vector2.up, swipeDelta.normalized);
 
-        // When the player jumps, re-enable the Rigidbody.
+        // Re-enable Rigidbody physics when a swipe (jump) occurs.
         rb.isKinematic = false;
 
-        // Apply a jump force for all upward swipes.
-        if (swipeDelta.y > 0)
-        {
-            rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
-        }
+        // Apply jump force.
+        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
 
         // Apply a horizontal force based on the swipe direction.
-        if (angle > 45 && angle < 135)
+        if (Mathf.Abs(swipeDelta.x) > Mathf.Abs(swipeDelta.y) * 0.5f)
         {
-            // Swipe Up-Right
-            rb.AddForce(transform.right * jumpForce * 0.5f, ForceMode.Impulse);
-        }
-        else if (angle > -135 && angle < -45)
-        {
-            // Swipe Up-Left
-            rb.AddForce(-transform.right * jumpForce * 0.5f, ForceMode.Impulse);
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        // Find the closest gravity source for a continuous pull.
-        FindClosestGravitySource();
-
-        if (closestGravitySource != null)
-        {
-            float distance = Vector3.Distance(transform.position, closestGravitySource.position);
-
-            // Only apply gravity if the player is within the activation distance.
-            if (distance < gravityActivationDistance)
+            if (swipeDelta.x > 0)
             {
-                // Apply a continuous forward movement when grounded.
-                if (isGrounded)
-                {
-                    transform.position += transform.forward * runSpeed * Time.deltaTime;
-                }
-                
-                // Gravity is applied only when the player is not grounded.
-                if (!isGrounded)
-                {
-                    Vector3 gravityDirection = (closestGravitySource.position - transform.position).normalized;
-                    rb.AddForce(gravityDirection * moveSpeed, ForceMode.Force);
-                }
-                
-                // Always align the player's rotation with the gravity source.
-                Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -Vector3.Normalize(closestGravitySource.position - transform.position)) * transform.rotation;
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+                // Swipe right
+                rb.AddForce(transform.right * jumpForce * 0.5f, ForceMode.Impulse);
+            }
+            else
+            {
+                // Swipe left
+                rb.AddForce(-transform.right * jumpForce * 0.5f, ForceMode.Impulse);
             }
         }
     }
-    
+
     /// <summary>
     /// Checks for collisions to determine if the player is grounded.
     /// This is where we make the player "stick" to the planet.
     /// </summary>
-    private void OnCollisionStay(Collision collision)
+    private void OnCollisionEnter(Collision collision)
     {
-        // Check if the collision object has the GravitySource tag.
         if (collision.gameObject.CompareTag(gravitySourceTag))
         {
-            // The player is grounded.
             isGrounded = true;
-            
-            // Set the rigidbody to kinematic to prevent sliding.
             rb.isKinematic = true;
+
+            // Instantly snap the player's rotation to align with the planet's gravity.
+            Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -Vector3.Normalize(closestGravitySource.position - transform.position)) * transform.rotation;
+            transform.rotation = targetRotation;
         }
     }
 
@@ -227,14 +217,14 @@ public class PlayerController : MonoBehaviour
         closestGravitySource = newClosestSource;
     }
     
-    // New code to handle the game over trigger.
+    /// <summary>
+    /// Handles the game over trigger.
+    /// </summary>
     private void OnTriggerEnter(Collider other)
     {
-        // Check if the collided object has the GameOver tag.
         if (other.CompareTag(gameOverTriggerTag))
         {
-            // Load the "GameOver" scene.
-            UnityEngine.SceneManagement.SceneManager.LoadScene("GameOver");
+            SceneManager.LoadScene("GameOver");
         }
     }
 }
