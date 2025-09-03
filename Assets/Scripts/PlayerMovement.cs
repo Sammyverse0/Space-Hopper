@@ -1,22 +1,23 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class PlayerSwipeRunner : MonoBehaviour
 {
     [Header("Lane Settings")]
-    public float laneOffset = 50f;      // Distance between lanes
-    public int laneCount = 3;           // Number of lanes
-    private int currentLane = 1;        // Start in middle lane
+    public float laneOffset = 50f;
+    public int laneCount = 3;
+    private int currentLane = 1;
 
     [Header("Movement Settings")]
-    public float forwardSpeed = 10f;     // Running speed when on planet
-    public float laneChangeSpeed = 10f;  // How fast we move sideways
+    public float forwardSpeed = 10f;
+    public float laneChangeSpeed = 10f;
 
     [Header("Jump Settings")]
-    public float jumpDistance = 200f;    // Forward distance covered in one jump
-    public float jumpHeight = 50f;       // Maximum jump height
-    public float jumpDuration = 1f;      // Time taken for one jump
+    public float jumpDistance = 200f;
+    public float jumpHeight = 50f;
+    public float jumpDuration = 1f;
 
     private Rigidbody rb;
     private bool isJumping = false;
@@ -26,19 +27,35 @@ public class PlayerSwipeRunner : MonoBehaviour
     private Vector2 startTouch;
     private bool isTouching = false;
 
+    private Animator animator;
+
+    // Game state
+    private bool gameStarted = false;  // player is idle at start
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        animator = GetComponent<Animator>();
+        animator.SetBool("isRunning", false); // idle at start
     }
 
     void Update()
     {
+        if (!gameStarted)
+        {
+            HandleGameStart(); // wait for tap
+            return;
+        }
+
         HandleSwipe();
     }
 
     void FixedUpdate()
     {
+        if (!gameStarted) return;
+
         if (isJumping)
         {
             PerformJump();
@@ -46,6 +63,16 @@ public class PlayerSwipeRunner : MonoBehaviour
         else
         {
             RunForward();
+        }
+    }
+
+    // ---------------- START GAME ON TAP ----------------
+    void HandleGameStart()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+        {
+            gameStarted = true;
+            animator.SetBool("isRunning", true); // switch to running anim
         }
     }
 
@@ -73,15 +100,15 @@ public class PlayerSwipeRunner : MonoBehaviour
                 {
                     if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
                     {
-                        // Horizontal swipe (trigger instantly)
-                        if (delta.x > 0 && currentLane < laneCount - 1) currentLane++; // right
-                        if (delta.x < 0 && currentLane > 0) currentLane--;             // left
+                        // Horizontal swipe
+                        if (delta.x > 0 && currentLane < laneCount - 1) currentLane++;
+                        if (delta.x < 0 && currentLane > 0) currentLane--;
 
-                        isTouching = false; // reset so multiple swipes can be detected
+                        isTouching = false;
                     }
                     else
                     {
-                        // Vertical swipe (jump)
+                        // Jump swipe
                         if (delta.y > 0 && !isJumping)
                         {
                             StartJump();
@@ -115,6 +142,8 @@ public class PlayerSwipeRunner : MonoBehaviour
 
         jumpStart = rb.position;
         jumpEnd = new Vector3(GetLaneX(), rb.position.y, rb.position.z + jumpDistance);
+
+        animator.SetBool("isJumping", true);
     }
 
     private void PerformJump()
@@ -130,6 +159,7 @@ public class PlayerSwipeRunner : MonoBehaviour
         if (jumpProgress >= 1f)
         {
             isJumping = false;
+            animator.SetBool("isJumping", false);
         }
     }
 
@@ -138,4 +168,25 @@ public class PlayerSwipeRunner : MonoBehaviour
     {
         return (currentLane - (laneCount / 2)) * laneOffset;
     }
+    
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("GameOver"))
+        {
+            SceneManager.LoadScene("GameOver"); 
+            // 👆 Replace "GameOverScene" with your actual scene name
+        }
+    }
+
+    // If you are using triggers instead of colliders with physics
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("GameOver"))
+        {
+            SceneManager.LoadScene("GameOver");
+        }
+    }
 }
+
+
