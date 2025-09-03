@@ -14,9 +14,11 @@ public class SceneLoader : MonoBehaviour
         Load("Level1");
     }
 
-    public void setting()
+    
+
+    public void MainMenu()
     {
-        Load("Settings");
+        Load("MainMenu");
     }
 
 }

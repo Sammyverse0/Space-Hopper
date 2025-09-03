@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 
 public class PlayerSwipeRunner : MonoBehaviour
 {
+    public GameObject touchToPlayText;
     [Header("Lane Settings")]
     public float laneOffset = 50f;
     public int laneCount = 3;
@@ -73,6 +74,7 @@ public class PlayerSwipeRunner : MonoBehaviour
         {
             gameStarted = true;
             animator.SetBool("isRunning", true); // switch to running anim
+            touchToPlayText.SetActive(false);
         }
     }
 
@@ -169,22 +171,15 @@ public class PlayerSwipeRunner : MonoBehaviour
         return (currentLane - (laneCount / 2)) * laneOffset;
     }
     
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("GameOver"))
-        {
-            SceneManager.LoadScene("GameOver"); 
-            // 👆 Replace "GameOverScene" with your actual scene name
-        }
-    }
-
-    // If you are using triggers instead of colliders with physics
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("GameOver"))
         {
-            SceneManager.LoadScene("GameOver");
+            SceneManager.LoadScene("GameOver"); // replace with your Game Over scene name
+        }
+        else if (other.CompareTag("WinTrigger"))
+        {
+            SceneManager.LoadScene("WinScene"); // replace with your Win scene name
         }
     }
 }
