@@ -12,7 +12,7 @@ public class PlayerSwipeRunner : MonoBehaviour
 
     [Header("Movement Settings")]
     public float forwardSpeed = 10f;
-    public float laneChangeSpeed = 10f;
+    public float laneChangeSpeed = 100f;
 
     [Header("Jump Settings")]
     public float jumpDistance = 200f;
@@ -52,6 +52,7 @@ public class PlayerSwipeRunner : MonoBehaviour
         // Check if the player has fallen off the level
         if (transform.position.y < fallThreshold)
         {
+            ScoreManager.instance.OnGameOver();
             SceneManager.LoadScene("GameOver"); // Or your game over scene name
         }
     }
