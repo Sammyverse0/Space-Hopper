@@ -13,7 +13,7 @@ public class PlayerSwipeRunner : MonoBehaviour
 
     [Header("Movement Settings")]
     public float forwardSpeed = 10f;
-    public float laneChangeSpeed = 10f;
+    public float laneChangeSpeed = 20f;
 
     [Header("Jump Settings")]
     public float jumpDistance = 200f;
@@ -36,17 +36,20 @@ public class PlayerSwipeRunner : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
-
-        animator = GetComponent<Animator>();
-        animator.SetBool("isRunning", false); // idle at start
+        animator = GetComponentInChildren<Animator>();
+        if (animator == null) {
+        Debug.LogError("ERROR: Animator not found on player!");
+    } else {
+        Debug.Log("Animator found successfully!");
+    }
+        animator.SetBool("isRunning", false);
     }
 
     void Update()
     {
         if (!gameStarted)
         {
-            HandleGameStart(); // wait for tap
+            HandleGameStart();
             return;
         }
 
@@ -74,7 +77,12 @@ public class PlayerSwipeRunner : MonoBehaviour
         {
             gameStarted = true;
             animator.SetBool("isRunning", true); // switch to running anim
-            touchToPlayText.SetActive(false);
+            
+            Debug.Log("GAME STARTED! Set isRunning to true.");
+            if (touchToPlayText != null)
+            {
+                touchToPlayText.SetActive(false);
+            }
         }
     }
 
@@ -105,8 +113,7 @@ public class PlayerSwipeRunner : MonoBehaviour
                         // Horizontal swipe
                         if (delta.x > 0 && currentLane < laneCount - 1) currentLane++;
                         if (delta.x < 0 && currentLane > 0) currentLane--;
-
-                        isTouching = false;
+                        isTouching = false; // Reset after a swipe is registered
                     }
                     else
                     {
@@ -114,7 +121,7 @@ public class PlayerSwipeRunner : MonoBehaviour
                         if (delta.y > 0 && !isJumping)
                         {
                             StartJump();
-                            isTouching = false;
+                            isTouching = false; // Reset after a swipe is registered
                         }
                     }
                 }
@@ -126,15 +133,22 @@ public class PlayerSwipeRunner : MonoBehaviour
         }
     }
 
-    // ---------------- RUN FORWARD ----------------
+    // ---------------- RUN FORWARD (CORRECTED) ----------------
     void RunForward()
     {
+        // 1. Calculate the target X position for the current lane.
         float targetX = GetLaneX();
-        Vector3 targetPos = new Vector3(targetX, rb.position.y, rb.position.z + forwardSpeed * Time.fixedDeltaTime);
 
-        Vector3 newPos = Vector3.Lerp(rb.position, targetPos, Time.fixedDeltaTime * laneChangeSpeed);
+        // 2. Smoothly interpolate the current X position towards the target X.
+        float newX = Mathf.Lerp(rb.position.x, targetX, Time.fixedDeltaTime * laneChangeSpeed);
+
+        // 3. Create a new position vector. The forward movement (Z axis) is constant and not smoothed.
+        Vector3 newPos = new Vector3(newX, rb.position.y, rb.position.z + forwardSpeed * Time.fixedDeltaTime);
+
+        // 4. Apply the new position to the Rigidbody.
         rb.MovePosition(newPos);
     }
+
 
     // ---------------- JUMP LOGIC ----------------
     private void StartJump()
@@ -146,13 +160,16 @@ public class PlayerSwipeRunner : MonoBehaviour
         jumpEnd = new Vector3(GetLaneX(), rb.position.y, rb.position.z + jumpDistance);
 
         animator.SetBool("isJumping", true);
+        Debug.Log("JUMP STARTED! Set isJumping to true.");
     }
 
     private void PerformJump()
     {
         jumpProgress += Time.fixedDeltaTime / jumpDuration;
 
+        // Use a sine wave to create a smooth arc for the jump height
         float height = Mathf.Sin(Mathf.PI * jumpProgress) * jumpHeight;
+        // Linearly interpolate the position from the start to the end of the jump
         Vector3 pos = Vector3.Lerp(jumpStart, jumpEnd, jumpProgress);
         pos.y += height;
 
@@ -162,15 +179,22 @@ public class PlayerSwipeRunner : MonoBehaviour
         {
             isJumping = false;
             animator.SetBool("isJumping", false);
+
+            Debug.Log("JUMP ENDED! Set isJumping to false.");
         }
     }
 
     // ---------------- LANE UTILITY ----------------
     float GetLaneX()
     {
+        // This formula calculates the X position for any lane, centered around X=0.
+        // For 3 lanes (0, 1, 2), (laneCount / 2) is 1.
+        // Lane 0: (0 - 1) * offset = -offset
+        // Lane 1: (1 - 1) * offset = 0
+        // Lane 2: (2 - 1) * offset = offset
         return (currentLane - (laneCount / 2)) * laneOffset;
     }
-    
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("GameOver"))
@@ -183,5 +207,3 @@ public class PlayerSwipeRunner : MonoBehaviour
         }
     }
 }
-
-
