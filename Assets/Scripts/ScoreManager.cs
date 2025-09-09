@@ -10,7 +10,7 @@ public class ScoreManager : MonoBehaviour
     [Header("Scoring")]
     public float scoreMultiplier = 1f;
 
-    private float score;
+    public float score;
     private float startingZ;
 
     // A static instance to make it easy for other scripts to access

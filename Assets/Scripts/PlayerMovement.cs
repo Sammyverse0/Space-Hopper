@@ -12,7 +12,12 @@ public class PlayerSwipeRunner : MonoBehaviour
 
     [Header("Movement Settings")]
     public float forwardSpeed = 10f;
-    public float laneChangeSpeed = 100f;
+    // NOTE: Lane Change Speed is no longer used with this instant-snap method.
+    // You can remove this variable if you like this new system.
+
+    [Header("Difficulty Scaling")]
+    public float maxForwardSpeed = 30f;
+    public float speedIncreaseRate = 0.01f;
 
     [Header("Jump Settings")]
     public float jumpDistance = 200f;
@@ -28,15 +33,15 @@ public class PlayerSwipeRunner : MonoBehaviour
     private bool isTouching = false;
     private Animator animator;
     private bool gameStarted = false;
-
-    // A simple way to check for game over
     private float fallThreshold = -20f;
+    private float initialForwardSpeed;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         animator = GetComponentInChildren<Animator>();
         if (animator != null) animator.SetBool("isRunning", false);
+        initialForwardSpeed = forwardSpeed;
     }
 
     void Update()
@@ -48,12 +53,24 @@ public class PlayerSwipeRunner : MonoBehaviour
         }
 
         HandleSwipe();
+        UpdateSpeed();
 
-        // Check if the player has fallen off the level
         if (transform.position.y < fallThreshold)
         {
-            ScoreManager.instance.OnGameOver();
-            SceneManager.LoadScene("GameOver"); // Or your game over scene name
+            if (ScoreManager.instance != null)
+            {
+                ScoreManager.instance.OnGameOver();
+            }
+            SceneManager.LoadScene("GameOver");
+        }
+    }
+
+    void UpdateSpeed()
+    {
+        if (ScoreManager.instance != null)
+        {
+            float targetSpeed = initialForwardSpeed + (ScoreManager.instance.score * speedIncreaseRate);
+            forwardSpeed = Mathf.Min(targetSpeed, maxForwardSpeed);
         }
     }
 
@@ -100,20 +117,20 @@ public class PlayerSwipeRunner : MonoBehaviour
             {
                 Vector2 delta = currentPos - startTouch;
 
-                if (delta.magnitude > 100f)
+                if (delta.magnitude > 100f) // Threshold to prevent accidental swipes
                 {
-                    if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
+                    if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y)) // Horizontal swipe
                     {
                         if (delta.x > 0 && currentLane < laneCount - 1) currentLane++;
                         if (delta.x < 0 && currentLane > 0) currentLane--;
-                        isTouching = false;
+                        isTouching = false; // Reset after one action
                     }
-                    else
+                    else // Vertical swipe
                     {
                         if (delta.y > 0 && !isJumping)
                         {
                             StartJump();
-                            isTouching = false;
+                            isTouching = false; // Reset after one action
                         }
                     }
                 }
@@ -125,11 +142,19 @@ public class PlayerSwipeRunner : MonoBehaviour
         }
     }
 
+    // --- UPDATED with instant "snapping" logic ---
     void RunForward()
     {
+        // Calculate the target X position for the current lane.
         float targetX = GetLaneX();
-        float newX = Mathf.Lerp(rb.position.x, targetX, Time.fixedDeltaTime * laneChangeSpeed);
-        Vector3 newPos = new Vector3(newX, rb.position.y, rb.position.z + forwardSpeed * Time.fixedDeltaTime);
+        
+        // Calculate the forward movement for this frame.
+        float forwardMovement = forwardSpeed * Time.fixedDeltaTime;
+
+        
+        Vector3 newPos = new Vector3(targetX, rb.position.y, rb.position.z + forwardMovement);
+        
+        
         rb.MovePosition(newPos);
     }
 
@@ -162,3 +187,4 @@ public class PlayerSwipeRunner : MonoBehaviour
         return (currentLane - (laneCount / 2)) * laneOffset;
     }
 }
+
