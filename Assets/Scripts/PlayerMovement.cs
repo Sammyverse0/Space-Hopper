@@ -14,6 +14,7 @@ public class PlayerSwipeRunner : MonoBehaviour
     public float forwardSpeed = 10f;
     // NOTE: Lane Change Speed is no longer used with this instant-snap method.
     // You can remove this variable if you like this new system.
+    public float laneChangeSpeed = 100f;
 
     [Header("Difficulty Scaling")]
     public float maxForwardSpeed = 30f;
@@ -141,38 +142,40 @@ public class PlayerSwipeRunner : MonoBehaviour
             isTouching = false;
         }
     }
-
-    // --- UPDATED with instant "snapping" logic ---
+    
     void RunForward()
     {
-        // Calculate the target X position for the current lane.
         float targetX = GetLaneX();
-        
-        // Calculate the forward movement for this frame.
         float forwardMovement = forwardSpeed * Time.fixedDeltaTime;
-
-        
         Vector3 newPos = new Vector3(targetX, rb.position.y, rb.position.z + forwardMovement);
-        
-        
         rb.MovePosition(newPos);
     }
 
+    // --- UPDATED to no longer lock in the target lane ---
     private void StartJump()
     {
         isJumping = true;
         jumpProgress = 0f;
         jumpStart = rb.position;
-        jumpEnd = new Vector3(GetLaneX(), rb.position.y, rb.position.z + jumpDistance);
+        // The jumpEnd no longer cares about the X position. It only defines the forward and vertical travel.
+        jumpEnd = new Vector3(jumpStart.x, jumpStart.y, jumpStart.z + jumpDistance);
         if (animator != null) animator.SetBool("isJumping", true);
     }
 
+    // --- UPDATED to allow mid-air lane changing ---
     private void PerformJump()
     {
         jumpProgress += Time.fixedDeltaTime / jumpDuration;
+
+        // Calculate the smooth arc for Y and Z positions
         float height = Mathf.Sin(Mathf.PI * jumpProgress) * jumpHeight;
         Vector3 pos = Vector3.Lerp(jumpStart, jumpEnd, jumpProgress);
         pos.y += height;
+
+        // NEW: Instead of using the old X position, get the CURRENT target X.
+        // This makes the player snap to the new lane instantly, even in mid-air.
+        pos.x = GetLaneX();
+
         rb.MovePosition(pos);
 
         if (jumpProgress >= 1f)

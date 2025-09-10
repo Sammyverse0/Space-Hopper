@@ -151,7 +151,6 @@ MonoBehaviour:
   playerTransform: {fileID: 2093840961}
   planetPrefabs:
   - {fileID: 2410585992523206437, guid: d89b693cb64d79048bc6aaa51bd1cb52, type: 3}
-  - {fileID: 5714925419217905446, guid: 72c726818039e87478516f668f3cb350, type: 3}
   poolSize: 10
   planetYPosition: 0
   initialPlanets: 10
@@ -935,7 +934,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1243896666}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: a3bc2dbf4831be64fa9d9a7bb0311fea, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 41349803e3b38cf4f8fc3a51ecd22c0f, type: 3}
   m_Controller: {fileID: 9100000, guid: e786d8f30395c684badfa195eaafc7c0, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
@@ -1452,9 +1451,9 @@ MonoBehaviour:
   laneOffset: 20
   laneCount: 3
   forwardSpeed: 10
-  laneChangeSpeed: 500
+  laneChangeSpeed: 100
   maxForwardSpeed: 30
-  speedIncreaseRate: 0.005
+  speedIncreaseRate: 0.01
   jumpDistance: 25
   jumpHeight: 30
   jumpDuration: 1
