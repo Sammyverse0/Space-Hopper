@@ -331,6 +331,7 @@ GameObject:
   m_Component:
   - component: {fileID: 502229354}
   - component: {fileID: 502229353}
+  - component: {fileID: 502229355}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -347,7 +348,7 @@ AudioSource:
   m_GameObject: {fileID: 502229352}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 24300002, guid: 5ecd0603db394cb44bcd6e182d8e334b, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: b049eb249c9ca594a978ca6b36801bb2, type: 3}
   m_PlayOnAwake: 1
@@ -450,6 +451,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &502229355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 502229352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86e5b9b8108154b46982dbe90f97e9c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MusicManager
+  audioMixer: {fileID: 24100000, guid: 5ecd0603db394cb44bcd6e182d8e334b, type: 2}
 --- !u!1 &614672311
 GameObject:
   m_ObjectHideFlags: 0
@@ -932,7 +946,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6c93bb3e75af4db4fbfe8b874f76873a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 43e7d850ac207044dbeee07ed181e97a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1034,7 +1048,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 614672312}
         m_TargetAssemblyTypeName: SceneLoader, Assembly-CSharp
-        m_MethodName: level1
+        m_MethodName: settings
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1064,7 +1078,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fcec0081ab77f9245bc16380943664fd, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e254d695b605dc44f92f32b2ada76c73, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

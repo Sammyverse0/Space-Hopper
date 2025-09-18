@@ -262,7 +262,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 70.44, y: 28.057}
+  m_SizeDelta: {x: 92.3918, y: 37.2325}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &184869679
 MonoBehaviour:
@@ -340,7 +340,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aae9578209f89d7448cda7116095556d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c8b572aa42980264f9db8ed46c53becd, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -530,7 +530,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 145.644, y: 26.877}
+  m_SizeDelta: {x: 163.37, y: 30.1485}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &386288611
 MonoBehaviour:
@@ -608,7 +608,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6c93bb3e75af4db4fbfe8b874f76873a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 43e7d850ac207044dbeee07ed181e97a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -734,6 +734,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c1b338c3e562934c83ce407d17941b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneLoader
+  pausePanel: {fileID: 0}
 --- !u!4 &736558861
 Transform:
   m_ObjectHideFlags: 0
@@ -859,8 +860,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -210}
-  m_SizeDelta: {x: 302.89, y: 302.888}
+  m_AnchoredPosition: {x: 0.000022888, y: -441.56}
+  m_SizeDelta: {x: 405.36, y: 405.36}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1491717630
 MonoBehaviour:
@@ -880,7 +881,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: -13.3
+  m_Spacing: -55.93
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
